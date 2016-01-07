@@ -30,7 +30,6 @@ module Spree
         item[:Amount][:value].zero?
       end
       pp_request = provider.build_set_express_checkout(express_checkout_request_details(order, items))
-
       begin
         pp_response = provider.set_express_checkout(pp_request)
         if pp_response.success?
@@ -96,7 +95,9 @@ module Spree
           :SolutionType => payment_method.preferred_solution.present? ? payment_method.preferred_solution : "Mark",
           :LandingPage => payment_method.preferred_landing_page.present? ? payment_method.preferred_landing_page : "Billing",
           :cppheaderimage => payment_method.preferred_logourl.present? ? payment_method.preferred_logourl : "",
-          :NoShipping => 1,
+          # :NoShipping => 1,
+          :BillingAddress => billing_address_options,
+          :AddressOverride => 1,
           :PaymentDetails => [payment_details(items)]
       }}
     end
@@ -146,7 +147,7 @@ module Spree
             :currencyID => current_order.currency,
             :value => current_order.additional_tax_total
           },
-          :ShipToAddress => address_options,
+          :ShipToAddress => shipping_address_options,
           :PaymentDetailsItem => items,
           :ShippingMethod => "Shipping Method Name Goes Here",
           :PaymentAction => "Sale"
@@ -154,7 +155,7 @@ module Spree
       end
     end
 
-    def address_options
+    def billing_address_options
       return {} unless address_required?
 
       {
@@ -166,6 +167,21 @@ module Spree
           :StateOrProvince => current_order.bill_address.state_text,
           :Country => current_order.bill_address.country.iso,
           :PostalCode => current_order.bill_address.zipcode
+      }
+    end
+
+    def shipping_address_options
+      return {} unless address_required?
+
+      {
+          :Name => current_order.ship_address.try(:full_name),
+          :Street1 => current_order.ship_address.address1,
+          :Street2 => current_order.ship_address.address2,
+          :CityName => current_order.ship_address.city,
+          :Phone => current_order.ship_address.phone,
+          :StateOrProvince => current_order.ship_address.state_text,
+          :Country => current_order.ship_address.country.iso,
+          :PostalCode => current_order.ship_address.zipcode
       }
     end
 
